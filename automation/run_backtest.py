@@ -49,7 +49,7 @@ def build_candidates(snapshot) -> Dict[str, pd.DataFrame]:
 
 
 def run() -> tuple[pd.Series, List[dict], object]:
-    snapshot = load_market_snapshot(START, END)
+    snapshot = load_market_snapshot(START, END, use_cached_only=True)
     frames = build_candidates(snapshot)
     all_dates = sorted(snapshot.benchmark.index)
     engine = BacktestEngine(initial_capital=INITIAL_CAPITAL, unit_fraction=0.2)

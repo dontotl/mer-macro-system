@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Dict, List
 
 import pandas as pd
 from pykrx import stock
 
 from automation.benchmark_loader import fetch_kospi_history
+from automation.naver_universe import fetch_large_cap_universe
 from automation.universe import MANUAL_MARKET_CAP, get_manual_universe
 
 
@@ -26,25 +28,38 @@ def get_trading_days(start: str, end: str) -> List[str]:
 
 def get_universe(asof: str, min_market_cap: int = 1_000_000_000_000) -> List[str]:
     tickers = stock.get_market_ticker_list(date=asof, market="ALL")
-    if not tickers:
-        return get_manual_universe()
-
-    selected = []
-    for ticker in tickers:
-        try:
-            cap_df = stock.get_market_cap_by_date(asof, asof, ticker)
-            if cap_df.empty:
+    if tickers:
+        selected = []
+        for ticker in tickers:
+            try:
+                cap_df = stock.get_market_cap_by_date(asof, asof, ticker)
+                if cap_df.empty:
+                    continue
+                market_cap = int(cap_df.iloc[-1]["시가총액"])
+                if market_cap >= min_market_cap:
+                    selected.append(ticker)
+            except Exception:
                 continue
-            market_cap = int(cap_df.iloc[-1]["시가총액"])
-            if market_cap >= min_market_cap:
-                selected.append(ticker)
-        except Exception:
-            continue
-    return selected or get_manual_universe()
+        if selected:
+            return selected
+
+    try:
+        df = fetch_large_cap_universe(min_market_cap_eok=min_market_cap // 100_000_000)
+        if not df.empty:
+            return df["code"].astype(str).str.zfill(6).tolist()
+    except Exception:
+        pass
+
+    return get_manual_universe()
 
 
 
 def fetch_price_frame(ticker: str, start: str, end: str) -> pd.DataFrame:
+    cache_path = Path("automation/cache/prices") / f"{ticker}.csv"
+    if cache_path.exists():
+        df = pd.read_csv(cache_path, index_col=0, parse_dates=True)
+        return df.loc[pd.to_datetime(start): pd.to_datetime(end)]
+
     df = stock.get_market_ohlcv_by_date(start, end, ticker)
     if df.empty:
         return df
@@ -89,11 +104,15 @@ def fetch_benchmark(start: str, end: str, ticker: str = "005930") -> pd.DataFram
 
 
 
-def load_market_snapshot(start: str, end: str, asof: str | None = None) -> MarketSnapshot:
+def load_market_snapshot(start: str, end: str, asof: str | None = None, use_cached_only: bool = False) -> MarketSnapshot:
     asof = asof or end
     universe = get_universe(asof)
     prices: Dict[str, pd.DataFrame] = {}
     market_caps: Dict[str, pd.DataFrame] = {}
+
+    if use_cached_only:
+        cached_dir = Path("automation/cache/prices")
+        universe = [p.stem for p in cached_dir.glob("*.csv")]
 
     for ticker in universe:
         price_df = fetch_price_frame(ticker, start, end)
