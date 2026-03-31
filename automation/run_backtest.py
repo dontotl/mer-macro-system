@@ -11,7 +11,7 @@ from automation.data_loader import load_market_snapshot
 from automation.metrics import summarize_performance
 from automation.strategy_rules import entry_candidate
 
-START = "20160101"
+START = "20250101"
 END = "20260331"
 INITIAL_CAPITAL = 100_000_000
 RS_TOP_PERCENTILE = 0.2

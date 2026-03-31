@@ -6,6 +6,7 @@ from typing import Dict, List
 import pandas as pd
 from pykrx import stock
 
+from automation.benchmark_loader import fetch_kospi_history
 from automation.universe import MANUAL_MARKET_CAP, get_manual_universe
 
 
@@ -77,11 +78,14 @@ def fetch_market_cap_frame(ticker: str, start: str, end: str) -> pd.DataFrame:
 
 
 def fetch_benchmark(start: str, end: str, ticker: str = "005930") -> pd.DataFrame:
-    # pykrx index API can be brittle across versions; use Samsung Electronics as a fallback market proxy.
-    df = stock.get_market_ohlcv_by_date(start, end, ticker)
-    df = df.rename(columns={"종가": "close"})
-    df.index = pd.to_datetime(df.index)
-    return df[["close"]]
+    try:
+        df = fetch_kospi_history()
+        return df.loc[pd.to_datetime(start): pd.to_datetime(end)][["close"]]
+    except Exception:
+        df = stock.get_market_ohlcv_by_date(start, end, ticker)
+        df = df.rename(columns={"종가": "close"})
+        df.index = pd.to_datetime(df.index)
+        return df[["close"]]
 
 
 
