@@ -1,4 +1,4 @@
-Total Return: 71.76%
-CAGR: 57.28%
-MDD: -20.14%
-Sharpe: 1.61
+Total Return: 26.43%
+CAGR: 2.38%
+MDD: -48.31%
+Sharpe: 0.22

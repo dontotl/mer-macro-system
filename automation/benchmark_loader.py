@@ -12,7 +12,7 @@ NAVER_KOSPI_URL = "https://finance.naver.com/sise/sise_index_day.naver?code=KOSP
 
 
 
-def fetch_kospi_history(max_pages: int = 300) -> pd.DataFrame:
+def fetch_kospi_history(max_pages: int = 650) -> pd.DataFrame:
     rows: List[dict] = []
     headers = {"User-Agent": "Mozilla/5.0"}
 
