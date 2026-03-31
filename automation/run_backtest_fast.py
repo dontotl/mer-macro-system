@@ -25,7 +25,10 @@ def run_fast():
 
     candidates_by_date = {}
     for ticker, df in frames.items():
-        required = ["market_cap", "rs_percentile", "is_3m_high", "ma5", "ma10", "ma20", "ma60", "close", "rs_ratio"]
+        df = df.copy()
+        df["turnover"] = df["close"] * df["volume"]
+        df["turnover_3d_avg_prev"] = df["turnover"].shift(1).rolling(3).mean()
+        required = ["market_cap", "rs_percentile", "is_3m_high", "ma5", "ma10", "ma20", "ma60", "close", "open", "volume", "rs_ratio", "turnover_3d_avg_prev"]
         valid = df.dropna(subset=required).copy()
         cond = (
             (valid["market_cap"] >= 1_000_000_000_000)
@@ -34,6 +37,8 @@ def run_fast():
             & (valid["ma5"] > valid["ma10"])
             & (valid["ma10"] > valid["ma20"])
             & (valid["ma20"] > valid["ma60"])
+            & (valid["close"] > valid["open"])
+            & (valid["turnover"] >= valid["turnover_3d_avg_prev"] * 1.5)
         )
         valid = valid[cond]
         for dt, row in valid.iterrows():
