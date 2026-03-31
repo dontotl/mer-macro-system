@@ -6,10 +6,10 @@ from typing import Dict, List
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from backtest_engine import BacktestEngine
-from data_loader import load_market_snapshot
-from metrics import summarize_performance
-from strategy_rules import entry_candidate
+from automation.backtest_engine import BacktestEngine
+from automation.data_loader import load_market_snapshot
+from automation.metrics import summarize_performance
+from automation.strategy_rules import entry_candidate
 
 START = "20160101"
 END = "20260331"
@@ -88,7 +88,13 @@ def run() -> tuple[pd.Series, List[dict], object]:
         for ticker, state in engine.positions.items():
             if date in frames[ticker].index:
                 close = float(frames[ticker].loc[date]["close"])
-                equity += INITIAL_CAPITAL * 0.2 * state.units_held * (close / state.last_unit_entry_price)
+                avg_ref = state.initial_entry_price
+                if state.units_held == 2 and state.entry_price_unit_2:
+                    avg_ref = (state.initial_entry_price + state.entry_price_unit_2) / 2
+                elif state.units_held == 3 and state.entry_price_unit_2 and state.entry_price_unit_3:
+                    avg_ref = (state.initial_entry_price + state.entry_price_unit_2 + state.entry_price_unit_3) / 3
+                invested = engine.position_cost.get(ticker, INITIAL_CAPITAL * 0.2 * state.units_held)
+                equity += invested * (close / avg_ref)
         equity_records.append((date, equity))
 
     equity_curve = pd.Series({d: v for d, v in equity_records}).sort_index()

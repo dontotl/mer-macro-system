@@ -6,6 +6,8 @@ from typing import Dict, List
 import pandas as pd
 from pykrx import stock
 
+from automation.universe import MANUAL_MARKET_CAP, get_manual_universe
+
 
 @dataclass
 class MarketSnapshot:
@@ -23,6 +25,9 @@ def get_trading_days(start: str, end: str) -> List[str]:
 
 def get_universe(asof: str, min_market_cap: int = 1_000_000_000_000) -> List[str]:
     tickers = stock.get_market_ticker_list(date=asof, market="ALL")
+    if not tickers:
+        return get_manual_universe()
+
     selected = []
     for ticker in tickers:
         try:
@@ -34,7 +39,7 @@ def get_universe(asof: str, min_market_cap: int = 1_000_000_000_000) -> List[str
                 selected.append(ticker)
         except Exception:
             continue
-    return selected
+    return selected or get_manual_universe()
 
 
 
@@ -59,7 +64,12 @@ def fetch_price_frame(ticker: str, start: str, end: str) -> pd.DataFrame:
 def fetch_market_cap_frame(ticker: str, start: str, end: str) -> pd.DataFrame:
     df = stock.get_market_cap_by_date(start, end, ticker)
     if df.empty:
-        return df
+        price_df = fetch_price_frame(ticker, start, end)
+        if price_df.empty:
+            return pd.DataFrame()
+        fallback = pd.DataFrame(index=price_df.index)
+        fallback["market_cap"] = MANUAL_MARKET_CAP.get(ticker, 1_500_000_000_000)
+        return fallback
     df = df.rename(columns={"시가총액": "market_cap"})
     df.index = pd.to_datetime(df.index)
     return df[["market_cap"]]

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from run_backtest import run
+from automation.run_backtest import run
 
 st.set_page_config(page_title="KRX RS Trend App", layout="wide")
 st.title("KRX RS 추세추종 백테스트")
