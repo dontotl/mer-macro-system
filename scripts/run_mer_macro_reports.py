@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -18,12 +19,34 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
+def resolve_python_bin(workspace: Path, requested: str) -> str:
+    if requested != './.venv-mer-dashboard/bin/python':
+        return requested
+
+    candidates = [
+        workspace / '.venv-mer-dashboard' / 'bin' / 'python',
+        workspace / '.venv' / 'bin' / 'python',
+    ]
+
+    for c in candidates:
+        if c.exists():
+            return str(c)
+
+    system_python = shutil.which('python3') or shutil.which('python')
+    if system_python:
+        return system_python
+
+    raise FileNotFoundError('No usable python interpreter found.')
+
+
 def main() -> int:
     args = parse_args()
-    workspace = Path(__file__).resolve().parents[3]
+    workspace = Path(__file__).resolve().parents[1]
     script = workspace / 'automation' / 'mer_daily_macro_note.py'
 
-    cmd = [args.python_bin, str(script), '--date', args.date]
+    python_bin = resolve_python_bin(workspace, args.python_bin)
+
+    cmd = [python_bin, str(script), '--date', args.date]
     if args.weekly:
         cmd.append('--weekly')
     if args.send_telegram_test:

@@ -107,6 +107,67 @@
 
 ---
 
+## 크론으로는 어떻게 동작하나
+
+아침 8시 크론 기준 동작은 아래 흐름입니다.
+
+```mermaid
+flowchart TD
+    A[OpenClaw cron 08:00] --> B[run_mer_macro_reports.py 실행]
+    B --> C[python 실행 경로 결정
+    .venv-mer-dashboard 우선]
+    C --> D[automation/mer_daily_macro_note.py 실행]
+    D --> E[일간 md 생성]
+    D --> F[telegram txt 생성]
+    D --> G[liquidity 차트 png 생성]
+    D --> H{weekly 옵션 여부}
+    H -- yes --> I[주간 md/txt 생성]
+    H -- no --> J[일간만 유지]
+    D --> K{send-telegram-test 여부}
+    K -- yes --> L[openclaw message send 텍스트 전송]
+    K -- yes --> M[openclaw message send 차트 전송]
+    K -- no --> N[파일만 생성]
+```
+
+즉, 크론은 직접 복잡한 로직을 다 하지 않고,
+**래퍼 스크립트 → 생성기 → 결과물 생성/전송** 구조로 단순하게 운영됩니다.
+
+---
+
+## 스크립트 아키텍처 흐름
+
+이 프로젝트의 핵심 스크립트 구조는 아래처럼 보면 됩니다.
+
+```mermaid
+flowchart LR
+    A[scripts/run_mer_macro_reports.py] --> B[python 실행환경 선택]
+    B --> C[automation/mer_daily_macro_note.py]
+    C --> D[invest/notes/daily-macro/YYYY-MM-DD.md]
+    C --> E[invest/notes/daily-macro/YYYY-MM-DD.telegram.txt]
+    C --> F[invest/notes/daily-macro/charts/YYYY-MM-DD-liquidity.png]
+    C --> G[invest/notes/daily-macro/weekly/YYYY-Www.md]
+    C --> H[invest/notes/daily-macro/weekly/YYYY-Www.telegram.txt]
+    C --> I[openclaw message send]
+    I --> J[Telegram 텍스트 발송]
+    I --> K[Telegram 차트 발송]
+```
+
+### 역할 구분
+- `scripts/run_mer_macro_reports.py`
+  - 실행 진입점
+  - python 경로 결정
+  - 옵션(`--weekly`, `--send-telegram-test`) 전달
+- `automation/mer_daily_macro_note.py`
+  - 실제 리포트 생성기
+  - md/txt/png 생성
+  - 필요 시 텔레그램 전송 수행
+
+즉,
+**run_mer_macro_reports.py는 오케스트레이터**,
+**mer_daily_macro_note.py는 실제 생성 엔진** 역할입니다.
+
+---
+
 ## 누구에게 유용한가
 
 이 스킬은 특히 아래 경우에 잘 맞습니다.
