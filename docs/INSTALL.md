@@ -1,155 +1,159 @@
 # INSTALL
 
-이 문서는 `mer-macro-system` 스킬을 설치하고 실제로 실행 가능한 상태로 만드는 방법을 설명합니다.
+이 문서는 `mer-macro-system` 저장소를 clone한 뒤,
+**OpenClaw / Claude Code / Codex CLI 환경에서 실제 실행 가능한 상태로 만드는 방법**을 설명합니다.
 
 ---
 
-## 1. 기본 전제
+## 1. 요구사항
 
-이 스킬은 OpenClaw 워크스페이스 기준으로 아래 구조를 전제로 합니다.
-
-- 워크스페이스 루트: `~/.openclaw/workspace`
-- 주요 생성기:
-  - `automation/mer_daily_macro_note.py`
-- 스킬 실행 래퍼:
-  - `scripts/run_mer_macro_reports.py`
-
----
-
-## 2. Python 환경
-
-권장 Python 실행 경로:
-
-```bash
-./.venv-mer-dashboard/bin/python
-```
-
-이유:
-- 기존 매크로/백테스트/시그널 자동화와 같은 운영 환경 공유
-- pandas/matplotlib 등 의존성 관리 일관성 유지
-
-### 권장 확인
-```bash
-./.venv-mer-dashboard/bin/python --version
-```
-
----
-
-## 3. 필수/권장 패키지
-
-### 최소 동작
-- 표 기반 md 리포트 생성
-- 텔레그램용 txt 생성
-- 주요 FRED 시리즈 수집
-
-### 권장 패키지
+### 필수
+- Python 3.10+
+- `pandas`
 - `matplotlib`
-  - 차트 PNG 생성용
+- 인터넷 연결 (FRED 데이터 수집용)
 
-설치 예시:
-```bash
-./.venv-mer-dashboard/bin/pip install matplotlib
-```
+### 선택
+- OpenClaw CLI
+  - 텔레그램 전송 테스트 및 자동 발송에 필요
+- `gh`
+  - GitHub 운영용
 
-확인 예시:
+---
+
+## 2. clone
+
 ```bash
-./.venv-mer-dashboard/bin/python -c "import matplotlib; print(matplotlib.__version__)"
+git clone https://github.com/dontotl/mer-macro-system.git
+cd mer-macro-system
 ```
 
 ---
 
-## 4. Git/GitHub 운영
+## 3. 가상환경 준비
 
-이 스킬은 결과물과 코드가 함께 관리되므로, 아래를 권장합니다.
+### 일반 Python venv 예시
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install pandas matplotlib requests
+```
 
-### 권장 사항
-- git 저장소에서 운영
-- GitHub 원격 저장소 연결
-- 토큰은 파일이 아니라 환경변수 또는 `gh auth login`으로 관리
-
-### 절대 하지 말 것
-- PAT를 채팅에 남기기
-- `.env` 파일을 그대로 커밋하기
-- 토큰 문자열을 문서/스크립트에 하드코딩하기
+### OpenClaw 운영 환경 예시
+이미 별도 운영 가상환경이 있다면 그 환경을 그대로 써도 됩니다.
+예: `./.venv-mer-dashboard/bin/python`
 
 ---
 
-## 5. .gitignore 보안 규칙
+## 4. 기본 실행 확인
 
-다음 항목은 반드시 git ignore 상태를 유지하세요.
+### 일간 리포트 생성
+```bash
+python scripts/run_mer_macro_reports.py --date 2026-04-29
+```
 
-- `.env`
-- `.env.*`
-- `*.env`
-- `*token*`
-- `*secret*`
-- `secrets/`
+### 주간 포함 생성
+```bash
+python scripts/run_mer_macro_reports.py --date 2026-04-29 --weekly
+```
 
-즉, 인증정보는 항상 **환경변수/키체인/gh 인증 저장소**로만 다루는 것이 좋습니다.
+생성이 끝나면 아래 파일들이 생겨야 합니다.
+
+- `invest/notes/daily-macro/2026-04-29.md`
+- `invest/notes/daily-macro/2026-04-29.telegram.txt`
+- `invest/notes/daily-macro/charts/2026-04-29-liquidity-timeseries.png`
+- `invest/notes/daily-macro/charts/2026-04-29-inflation-timeseries.png`
+- `invest/notes/daily-macro/charts/2026-04-29-stress-timeseries.png`
 
 ---
 
-## 6. OpenClaw와 연결
+## 5. OpenClaw에서 텔레그램 전송 테스트
 
-이 스킬은 OpenClaw에서 아래 방식으로 연결할 수 있습니다.
+OpenClaw가 설치/로그인된 환경이면 아래처럼 실제 전송까지 확인할 수 있습니다.
 
-### 직접 실행
 ```bash
-./.venv-mer-dashboard/bin/python scripts/run_mer_macro_reports.py --date 2026-04-23
-```
-
-### 일간 + 주간 동시 생성
-```bash
-./.venv-mer-dashboard/bin/python scripts/run_mer_macro_reports.py --date 2026-04-23 --weekly
-```
-
-### 텔레그램 테스트 포함
-```bash
-./.venv-mer-dashboard/bin/python scripts/run_mer_macro_reports.py \
-  --date 2026-04-23 \
+python scripts/run_mer_macro_reports.py \
+  --date 2026-04-29 \
   --weekly \
   --send-telegram-test \
-  --telegram-target 5294188460
+  --telegram-target <chat_id>
+```
+
+### 참고
+- 이 전송은 내부적으로 `openclaw message send`를 사용합니다.
+- OpenClaw가 없는 환경에서는 리포트/차트 생성까지만 사용하면 됩니다.
+
+---
+
+## 6. Claude Code / Codex CLI에서 쓰는 법
+
+이 저장소는 특정 에이전트에 강하게 묶여 있지 않습니다.
+
+### 그대로 가능한 것
+- md 생성
+- telegram txt 생성
+- 차트 png 생성
+- 리포트 로직 수정
+
+### OpenClaw가 있을 때만 가능한 것
+- `--send-telegram-test` 기반 실제 텔레그램 발송
+- OpenClaw cron 자동화
+
+즉,
+**생성 엔진은 독립적이고, 전송/자동화는 OpenClaw 친화적**입니다.
+
+---
+
+## 7. 한글 폰트 렌더링
+
+차트에는 한글 텍스트가 들어가므로, macOS 기준 아래 폰트 중 하나를 자동 탐색합니다.
+
+- `Apple SD Gothic Neo`
+- `NanumGothic`
+- `AppleGothic`
+- `Malgun Gothic`
+
+별도 설정 없이도 대부분 해결되지만,
+폰트가 없는 환경에서는 시스템 한글 폰트를 추가로 설치해야 할 수 있습니다.
+
+---
+
+## 8. 보안/운영 주의사항
+
+### 커밋하지 말 것
+- `.env`
+- 토큰/secret 파일
+- 개인 채팅 ID 목록 전체
+- 개인 워크스페이스 메모/메모리 파일
+
+### 권장
+- 인증은 환경변수 또는 CLI 로그인 상태로 처리
+- 운영 자동화는 repo 외부 비밀 저장소/런타임 설정으로 관리
+
+---
+
+## 9. 추천 운영 구조
+
+```mermaid
+flowchart TD
+    A[Clone repo] --> B[Create venv]
+    B --> C[Install pandas/matplotlib]
+    C --> D[Run daily report]
+    D --> E[Check md/txt/png outputs]
+    E --> F{OpenClaw available?}
+    F -- yes --> G[Test Telegram send]
+    F -- no --> H[Use files only]
 ```
 
 ---
 
-## 7. 설치 후 확인 체크리스트
+## 10. 설치 한 줄 요약
 
-설치가 끝나면 아래를 확인하세요.
+1. clone
+2. venv 준비
+3. `pandas`, `matplotlib` 설치
+4. 일간/주간 생성 확인
+5. OpenClaw가 있으면 텔레그램 테스트
 
-### 필수 확인
-1. md 파일 생성됨
-2. telegram txt 생성됨
-3. 차트 png 생성됨
-4. 내용에 표/메르 설명/현재 상태 포함됨
-
-### 확인 경로
-- `invest/notes/daily-macro/YYYY-MM-DD.md`
-- `invest/notes/daily-macro/YYYY-MM-DD.telegram.txt`
-- `invest/notes/daily-macro/charts/YYYY-MM-DD-liquidity.png`
-- `invest/notes/daily-macro/weekly/YYYY-Www.md`
-- `invest/notes/daily-macro/weekly/YYYY-Www.telegram.txt`
-
----
-
-## 8. 자동화 추천
-
-권장 운영 방식:
-- 매일 오전 8시: 일간 리포트 + 텔레그램 발송
-- 주말 또는 월요일 아침: 주간 요약 생성/전송
-
-즉, 이 스킬은 단발 실행보다는 **정기 자동화**로 붙였을 때 가치가 커집니다.
-
----
-
-## 9. 설치 한 줄 요약
-
-- Python 환경 준비
-- `matplotlib` 설치
-- 보안 파일 git 제외
-- 스크립트 실행 확인
-- 텔레그램 전송 확인
-- 크론 연결
-
-이렇게 하면 운영 가능한 상태입니다.
+이렇게 하면 바로 운영 가능한 상태가 됩니다.
