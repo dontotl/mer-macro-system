@@ -23,17 +23,17 @@
 
 ### 일간 리포트 생성
 ```bash
-./.venv-mer-dashboard/bin/python skills/mer-macro-system/scripts/run_mer_macro_reports.py --date 2026-04-23
+./.venv-mer-dashboard/bin/python scripts/run_mer_macro_reports.py --date 2026-04-23
 ```
 
 ### 일간 + 주간 동시 생성
 ```bash
-./.venv-mer-dashboard/bin/python skills/mer-macro-system/scripts/run_mer_macro_reports.py --date 2026-04-23 --weekly
+./.venv-mer-dashboard/bin/python scripts/run_mer_macro_reports.py --date 2026-04-23 --weekly
 ```
 
 ### 텔레그램 테스트 전송 포함
 ```bash
-./.venv-mer-dashboard/bin/python skills/mer-macro-system/scripts/run_mer_macro_reports.py \
+./.venv-mer-dashboard/bin/python scripts/run_mer_macro_reports.py \
   --date 2026-04-23 \
   --weekly \
   --send-telegram-test \

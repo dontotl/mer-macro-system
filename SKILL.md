@@ -32,17 +32,17 @@ description: Generate and operate Mer-style macro reports from the OpenClaw work
 
 ### 일간 생성
 ```bash
-./.venv-mer-dashboard/bin/python skills/mer-macro-system/scripts/run_mer_macro_reports.py --date YYYY-MM-DD
+./.venv-mer-dashboard/bin/python scripts/run_mer_macro_reports.py --date YYYY-MM-DD
 ```
 
 ### 일간 + 주간 생성
 ```bash
-./.venv-mer-dashboard/bin/python skills/mer-macro-system/scripts/run_mer_macro_reports.py --date YYYY-MM-DD --weekly
+./.venv-mer-dashboard/bin/python scripts/run_mer_macro_reports.py --date YYYY-MM-DD --weekly
 ```
 
 ### 텔레그램 테스트 포함
 ```bash
-./.venv-mer-dashboard/bin/python skills/mer-macro-system/scripts/run_mer_macro_reports.py \
+./.venv-mer-dashboard/bin/python scripts/run_mer_macro_reports.py \
   --date YYYY-MM-DD \
   --weekly \
   --send-telegram-test \
